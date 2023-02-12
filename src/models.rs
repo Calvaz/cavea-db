@@ -1,6 +1,4 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct Row {
     pub(crate) value: String,
 }

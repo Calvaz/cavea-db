@@ -30,10 +30,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_new(&self, tokens: &'a [&'a str]) -> Result<(String, &[&str]), String> {
-        if let "table" = self.peek_token(tokens, 0) {
+        if let "table" = tokens[0] {
             return Err(String::from("inserting new table is not implemented yet"));
         } else {
-            Ok(("row".to_owned(), tokens))
+            Ok((String::from("row"), tokens))
         }
     }
 
