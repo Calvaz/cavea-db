@@ -2,6 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 use crate::parser::Parser;
+use crate::vdbe::Vdbe;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum MetaCommand {
@@ -20,11 +21,16 @@ impl fmt::Display for MetaCommand {
     }
 }
 
+pub const ROW: &str = "row";
+pub const TABLE: &str = "table";
+
 pub enum StatementType {
     Select,
     Insert,
     Update,
 }
+
+pub struct Statement<'a>(StatementType, String, &'a [&'a str]);
 
 pub fn process_tokens(tokens: &str) -> Result<MetaCommand, String> {
     if tokens.starts_with(".") {
@@ -35,13 +41,17 @@ pub fn process_tokens(tokens: &str) -> Result<MetaCommand, String> {
         };
     }
 
-    let _statement = match prepare_statement(tokens) {
-        Ok(statement) => statement,
+    let tokens_list: Vec<&str> = tokens.split(" ").collect::<Vec<&str>>();
+    let parser = Parser::new(&tokens_list);
+    let statement_type = match prepare_statement(&parser) {
+        Ok(s) => s,
         Err(e) => return Err(e),
     };
 
-    // execute_statement(statement);
+    let args = parser.parse_args(&statement_type).unwrap();
 
+    // implement statement details based on statement type
+    execute_statement(Statement(statement_type, args.0, args.1));
     Ok(MetaCommand::Success)
 }
 
@@ -53,19 +63,22 @@ fn apply_meta_command(tokens: &str) -> Result<MetaCommand, String> {
     }
 }
 
-pub fn prepare_statement(sentence: &str) -> Result<StatementType, String> {
-    let tokens: Vec<&str> = sentence.split(" ").collect::<Vec<&str>>();
-    let parser = Parser::new(&tokens);
-    println!("{}", &parser.parse().unwrap());
-    Ok(StatementType::Select)
+pub fn prepare_statement(parser: &Parser) -> Result<StatementType, String> {
+    parser.parse_statement()
 }
 
-pub fn execute_statement(statement: StatementType) -> Result<(), Box<dyn Error>> {
-    match statement {
-        StatementType::Select => println!("selecting"),
-        StatementType::Insert => println!("inserting"),
+pub fn execute_statement(statement: Statement) -> Result<(), Box<dyn Error>> {
+    match statement.0 {
+        StatementType::Select => {
+            println!("selecting");
+            Vdbe::read();
+        }
+        StatementType::Insert => {
+            println!("inserting");
+            Vdbe::write(statement.1, statement.2);
+        }
         StatementType::Update => println!("updating"),
-    }
+    };
 
     Ok(())
 }

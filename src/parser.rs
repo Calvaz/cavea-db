@@ -1,4 +1,7 @@
-use crate::{models::Row, vdbe::Vdbe};
+use crate::{
+    tokenizer::{StatementType, ROW, TABLE},
+    vdbe::Vdbe,
+};
 
 pub struct Parser<'a> {
     pub(crate) tokens: &'a Vec<&'a str>,
@@ -9,30 +12,43 @@ impl<'a> Parser<'a> {
         Parser { tokens: sentence }
     }
 
-    pub fn parse(&self) -> Result<String, String> {
+    pub fn parse_statement(&self) -> Result<StatementType, String> {
         let result = match self.tokens[0] {
-            "new" => self.parse_new(&self.tokens[1..]).unwrap(),
-            "select" => self.parse_select(&self.tokens[1..]).unwrap(),
-            _ => String::from("nothing was executed"),
+            "new" => StatementType::Insert, // self.parse_new(&self.tokens[1..]).unwrap(),
+            "select" => StatementType::Select, //self.parse_select(&self.tokens[1..]).unwrap(),
+            _ => return Err(format!("Unrecognized command: {}.\n", self.tokens[0])),
         };
         Ok(result)
     }
 
-    fn parse_new(&self, tokens: &[&str]) -> Result<String, String> {
-        let row = Row {
-            value: String::from(tokens[0]),
-        };
-        Vdbe::write(row)
-    }
-
-    fn parse_select(&self, tokens: &[&str]) -> Result<String, String> {
-        match tokens[0] {
-            "*" => Vdbe::read(),
-            _ => Ok(format!("'{}' not found", tokens[0])),
+    pub fn parse_args(&self, statement: &StatementType) -> Result<(String, &[&str]), String> {
+        match statement {
+            StatementType::Select => self.parse_select(&self.tokens[1..]),
+            StatementType::Insert => self.parse_new(&self.tokens[1..]),
+            _ => return Err(String::from("statement type not valid")),
         }
     }
 
-    fn peek_token(&self, tokens: Vec<&'a str>, current_index: usize) -> &str {
+    fn parse_new(&self, tokens: &'a [&'a str]) -> Result<(String, &[&str]), String> {
+        if let "table" = self.peek_token(tokens, 0) {
+            return Err(String::from("inserting new table is not implemented yet"));
+        } else {
+            Ok(("row".to_owned(), tokens))
+        }
+    }
+
+    fn parse_select(&self, tokens: &'a [&'a str]) -> Result<(String, &[&str]), String> {
+        match tokens[0] {
+            "*" => Ok((String::from("row"), tokens)),
+            _ => {
+                return Err(String::from(
+                    "selecting columns or other is not implemented yet",
+                ))
+            }
+        }
+    }
+
+    fn peek_token(&self, tokens: &'a [&'a str], current_index: usize) -> &str {
         &tokens[current_index + 1]
     }
 }
