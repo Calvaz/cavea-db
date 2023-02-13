@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt;
 
+use crate::pager::Pager;
 use crate::parser::Parser;
 use crate::vdbe::Vdbe;
 
@@ -71,11 +72,11 @@ pub fn execute_statement(statement: Statement) -> Result<(), Box<dyn Error>> {
     match statement.0 {
         StatementType::Select => {
             println!("selecting");
-            Vdbe::read();
+            Pager::read(0);
         }
         StatementType::Insert => {
             println!("inserting");
-            Vdbe::write(statement.1, statement.2);
+            Pager::write(statement.2);
         }
         StatementType::Update => println!("updating"),
     };

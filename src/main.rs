@@ -2,6 +2,7 @@ use std::io;
 use std::io::Write;
 
 mod models;
+mod pager;
 mod parser;
 mod tokenizer;
 mod vdbe;
