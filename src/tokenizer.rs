@@ -69,14 +69,15 @@ pub fn prepare_statement(parser: &Parser) -> Result<StatementType, String> {
 }
 
 pub fn execute_statement(statement: Statement) -> Result<(), Box<dyn Error>> {
+    let pager = Pager::new();
     match statement.0 {
         StatementType::Select => {
             println!("selecting");
-            Pager::read(0);
+            pager.read_page(0)?;
         }
         StatementType::Insert => {
             println!("inserting");
-            Pager::write(statement.2);
+            pager.write(0, statement.2)?;
         }
         StatementType::Update => println!("updating"),
     };

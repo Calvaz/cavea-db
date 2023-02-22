@@ -16,3 +16,9 @@ impl From<u8> for NodeType {
         }
     }
 }
+
+struct BtreeNode {
+    node_type: NodeType,
+    key: u32,
+    value: str,
+}
