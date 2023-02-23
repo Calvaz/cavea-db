@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt;
 
+use crate::models::Table;
 use crate::pager::Pager;
 use crate::parser::Parser;
 use crate::vdbe::Vdbe;
@@ -69,15 +70,20 @@ pub fn prepare_statement(parser: &Parser) -> Result<StatementType, String> {
 }
 
 pub fn execute_statement(statement: Statement) -> Result<(), Box<dyn Error>> {
-    let pager = Pager::new();
+    let table = Table {
+        pager: Pager::new(),
+        num_pages: 0,
+        root_node: 0,
+    };
+
     match statement.0 {
         StatementType::Select => {
             println!("selecting");
-            pager.read_page(0)?;
+            table.pager.read_page(0)?;
         }
         StatementType::Insert => {
             println!("inserting");
-            pager.write(0, statement.2)?;
+            table.pager.append(statement.2)?;
         }
         StatementType::Update => println!("updating"),
     };

@@ -2,7 +2,6 @@ use std::io;
 use std::io::Write;
 
 mod btree;
-mod cursor;
 mod models;
 mod pager;
 mod parser;

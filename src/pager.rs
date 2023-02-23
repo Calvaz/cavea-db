@@ -3,51 +3,46 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::mem;
 use std::str;
-use std::sync::Once;
 
 const DB_PATH: &str = "data";
 const DB_FILE_PATH: &str = "./data/cavea.db";
 const MAX_PAGE_SIZE: usize = 4096;
-
-static mut INSTANCE: *const Pager = std::ptr::null();
-static ONCE: Once = Once::new();
+const ROOT_NODE_SIZE: u64 = 1;
+const PARENT_KEY_SIZE: u64 = 4;
 
 pub struct Pager {
     pub num_pages: u32,
     pub file_length: u64,
-    root_node: u8,
 }
 
 impl Pager {
-    pub fn new() -> &'static Self {
-        // singleton implementation
-        ONCE.call_once(|| {
-            let file_length = fs::metadata(DB_FILE_PATH)
-                .unwrap_or_else(|_| {
-                    Self::create_dir_and_file();
-                    fs::metadata(DB_FILE_PATH).unwrap()
-                })
-                .len();
+    pub fn new() -> Self {
+        let file_length = fs::metadata(DB_FILE_PATH)
+            .unwrap_or_else(|_| {
+                Self::create_dir_and_file();
+                fs::metadata(DB_FILE_PATH).unwrap()
+            })
+            .len();
 
-            let mut root_node = 0;
-            if file_length > 1 {
-                // root page is in the first byte of the file
-                let buffer = Self::read_bytes(1, 0);
-                root_node = buffer[0];
-            }
+        let mut root_node = 0;
+        if file_length > 1 {
+            // root page is in the first byte of the file
+            let buffer = Self::read_bytes(1, 0);
+            root_node = buffer[0];
+        }
 
-            let pager = Pager {
-                num_pages: Self::get_num_pages(file_length) as u32,
-                file_length,
-                root_node,
-            };
-            unsafe { INSTANCE = std::mem::transmute(Box::new(pager)) };
-        });
-        unsafe { &*INSTANCE }
+        Pager {
+            num_pages: Self::get_num_pages(file_length) as u32,
+            file_length,
+        }
     }
 
     fn get_num_pages(file_length: u64) -> usize {
         file_length as usize / MAX_PAGE_SIZE
+    }
+
+    fn get_header_size() -> u64 {
+        ROOT_NODE_SIZE + PARENT_KEY_SIZE
     }
 
     fn read_bytes(bytes: usize, from: usize) -> Vec<u8> {
@@ -85,9 +80,24 @@ impl Pager {
     pub fn write(&self, offset: u64, mut value: &[&str]) -> Result<String, String> {
         let mut file = Self::open_file_at(true, offset);
 
-        // insert first page if I have not inserted anything
+        if file.metadata().unwrap().len() == 0 {
+            return Err(String::from("can't do this"));
+        }
+
+        // write on file
+        file.write_all(&value[0].as_bytes()).unwrap();
+
+        let result = format!("added string {:?}", value[0]);
+        Ok(result)
+    }
+
+    pub fn append(&self, mut value: &[&str]) -> Result<String, String> {
+        let mut file = Self::open_file_at(true, self.file_length);
+
+        // insert first page and headers if I have not inserted anything
         if file.metadata().unwrap().len() == 0 {
             file.write_all(&[0u8; MAX_PAGE_SIZE]).unwrap();
+            file.seek(SeekFrom::Start(Self::get_header_size())).unwrap();
         }
 
         println!("size is {}", mem::size_of_val(value[0]));
@@ -119,4 +129,10 @@ impl Pager {
                 .unwrap_or_else(|err| panic!("could not create folder because {err}"))
         })
     }
+}
+
+pub struct Cursor {
+    pub page_num: u32,
+    pub cell_num: u32,
+    pub is_end: bool,
 }

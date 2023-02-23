@@ -1,3 +1,5 @@
+use crate::pager::Cursor;
+
 #[repr(u8)]
 #[derive(Debug)]
 pub enum NodeType {
@@ -20,5 +22,15 @@ impl From<u8> for NodeType {
 struct BtreeNode {
     node_type: NodeType,
     key: u32,
-    value: str,
+    value: String,
+}
+
+impl BtreeNode {
+    fn new_leaf_node(cursor: Cursor, key: u32, value: &str) -> BtreeNode {
+        BtreeNode {
+            key,
+            node_type: NodeType::Leaf,
+            value: String::from(value),
+        }
+    }
 }
