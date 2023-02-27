@@ -73,7 +73,7 @@ pub fn execute_statement(statement: Statement) -> Result<(), Box<dyn Error>> {
     let table = Table {
         pager: Pager::new(),
         num_pages: 0,
-        root_node: 0,
+        root_page: 0,
     };
 
     match statement.0 {
@@ -83,7 +83,7 @@ pub fn execute_statement(statement: Statement) -> Result<(), Box<dyn Error>> {
         }
         StatementType::Insert => {
             println!("inserting");
-            table.pager.append(statement.2)?;
+            table.pager.append(table.root_page, statement.2)?;
         }
         StatementType::Update => println!("updating"),
     };
