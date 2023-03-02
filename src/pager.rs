@@ -65,6 +65,12 @@ impl Pager {
         buffer
     }
 
+    pub fn read_btree(&self, root_page: u8) -> Result<Vec<BtreeNode>, String> {
+        let root_page = self.read_page(root_page)?;
+        let nodes = BtreeNode::get(root_page);
+        Ok(nodes)
+    }
+
     pub fn read_page(&self, page_num: u8) -> Result<[u8; MAX_PAGE_SIZE], String> {
         let mut buffer = [0u8; 4096];
         let page_num_offset = (page_num as usize * MAX_PAGE_SIZE) as u64;
@@ -95,23 +101,18 @@ impl Pager {
         Ok(result)
     }
 
-    pub fn append(&self, root_page: u8, mut value: &[&str]) -> Result<String, String> {
+    pub fn append_btree(&self, root_page: u8, mut value: &[&str]) -> Result<String, String> {
         let root_page = self.read_page(root_page).unwrap();
         let nodes_count = BtreeNode::get(root_page).len();
-        println!("found keys: {}", nodes_count);
         let offset = Self::get_header_size() + (Self::get_node_size() * nodes_count);
 
         // write on file
         let mut file = Self::open_file_at(true, offset as u64);
         let buffer = [0u8; NODE_KEY_SIZE + NODE_VALUE_SIZE];
         let mut new_key = ((nodes_count + 1) as u8).to_be_bytes().to_vec();
-        println!("new key: {:?}", new_key);
         new_key.extend_from_slice(value[0].as_bytes());
-        println!("new key with value: {:?}", new_key);
         file.write_all(&new_key[..]).unwrap();
 
-        println!("adding {:?}", &new_key[..]);
-        println!("size is value: {}", mem::size_of_val(value[0]));
         let result = format!("added string {:?}", value[0]);
         Ok(result)
     }

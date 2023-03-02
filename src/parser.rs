@@ -14,14 +14,14 @@ impl<'a> Parser<'a> {
 
     pub fn parse_statement(&self) -> Result<StatementType, String> {
         let result = match self.tokens[0] {
-            "new" => StatementType::Insert, // self.parse_new(&self.tokens[1..]).unwrap(),
-            "select" => StatementType::Select, //self.parse_select(&self.tokens[1..]).unwrap(),
+            "new" => StatementType::Insert,
+            "select" => StatementType::Select,
             _ => return Err(format!("Unrecognized command: {}.\n", self.tokens[0])),
         };
         Ok(result)
     }
 
-    pub fn parse_args(&self, statement: &StatementType) -> Result<(String, &[&str]), String> {
+    pub fn parse_args(&self, statement: &StatementType) -> Result<&[&str], String> {
         match statement {
             StatementType::Select => self.parse_select(&self.tokens[1..]),
             StatementType::Insert => self.parse_new(&self.tokens[1..]),
@@ -29,17 +29,16 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_new(&self, tokens: &'a [&'a str]) -> Result<(String, &[&str]), String> {
+    fn parse_new(&self, tokens: &'a [&'a str]) -> Result<&[&str], String> {
         if let "table" = tokens[0] {
             return Err(String::from("inserting new table is not implemented yet"));
-        } else {
-            Ok((String::from("row"), tokens))
         }
+        Ok(tokens)
     }
 
-    fn parse_select(&self, tokens: &'a [&'a str]) -> Result<(String, &[&str]), String> {
+    fn parse_select(&self, tokens: &'a [&'a str]) -> Result<&[&str], String> {
         match tokens[0] {
-            "*" => Ok((String::from("row"), tokens)),
+            "*" => Ok(tokens),
             _ => {
                 return Err(String::from(
                     "selecting columns or other is not implemented yet",

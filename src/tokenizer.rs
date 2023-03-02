@@ -53,7 +53,7 @@ pub fn process_tokens(tokens: &str) -> Result<MetaCommand, String> {
     let args = parser.parse_args(&statement_type).unwrap();
 
     // implement statement details based on statement type
-    execute_statement(Statement(statement_type, args.0, args.1));
+    execute_statement(statement_type, args);
     Ok(MetaCommand::Success)
 }
 
@@ -69,21 +69,21 @@ pub fn prepare_statement(parser: &Parser) -> Result<StatementType, String> {
     parser.parse_statement()
 }
 
-pub fn execute_statement(statement: Statement) -> Result<(), Box<dyn Error>> {
+pub fn execute_statement(statement: StatementType, value: &[&str]) -> Result<(), Box<dyn Error>> {
     let table = Table {
         pager: Pager::new(),
         num_pages: 0,
         root_page: 0,
     };
 
-    match statement.0 {
+    match statement {
         StatementType::Select => {
             println!("selecting");
-            table.pager.read_page(0)?;
+            table.pager.read_btree(0)?;
         }
         StatementType::Insert => {
             println!("inserting");
-            table.pager.append(table.root_page, statement.2)?;
+            table.pager.append_btree(table.root_page, value)?;
         }
         StatementType::Update => println!("updating"),
     };
