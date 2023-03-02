@@ -1,4 +1,4 @@
-use crate::btree::BtreeNode;
+use crate::btree::{BtreeNode, NODE_KEY_SIZE, NODE_VALUE_SIZE};
 use crate::models::Row;
 use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -10,8 +10,6 @@ const DB_FILE_PATH: &str = "./data/cavea.db";
 pub const MAX_PAGE_SIZE: usize = 4096;
 const ROOT_NODE_SIZE: usize = 1;
 const PARENT_KEY_SIZE: usize = 4;
-const NODE_KEY_SIZE: usize = 2;
-const NODE_VALUE_SIZE: usize = 20;
 
 pub struct Pager {
     pub num_pages: u32,
@@ -50,12 +48,8 @@ impl Pager {
         file_length as usize / MAX_PAGE_SIZE
     }
 
-    fn get_header_size() -> usize {
+    pub fn get_header_size() -> usize {
         ROOT_NODE_SIZE + PARENT_KEY_SIZE
-    }
-
-    fn get_node_size() -> usize {
-        NODE_KEY_SIZE + NODE_VALUE_SIZE
     }
 
     fn read_bytes(bytes: usize, from: usize) -> Vec<u8> {
@@ -104,12 +98,12 @@ impl Pager {
     pub fn append_btree(&self, root_page: u8, mut value: &[&str]) -> Result<String, String> {
         let root_page = self.read_page(root_page).unwrap();
         let nodes_count = BtreeNode::get(root_page).len();
-        let offset = Self::get_header_size() + (Self::get_node_size() * nodes_count);
+        let offset = Self::get_header_size() + (BtreeNode::get_node_size() * nodes_count);
 
         // write on file
         let mut file = Self::open_file_at(true, offset as u64);
         let buffer = [0u8; NODE_KEY_SIZE + NODE_VALUE_SIZE];
-        let mut new_key = ((nodes_count + 1) as u8).to_be_bytes().to_vec();
+        let mut new_key = ((nodes_count + 1) as u32).to_be_bytes().to_vec();
         new_key.extend_from_slice(value[0].as_bytes());
         file.write_all(&new_key[..]).unwrap();
 

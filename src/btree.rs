@@ -1,11 +1,11 @@
-use std::{any::type_name, mem, str};
+use std::{any::type_name, fmt, mem, str};
 
-use crate::pager::{Cursor, MAX_PAGE_SIZE};
+use crate::pager::{Cursor, Pager, MAX_PAGE_SIZE};
 
 const ROOT_NODE_SIZE: usize = 1;
 const PARENT_KEY_SIZE: usize = 4;
-const NODE_KEY_SIZE: usize = 4;
-const NODE_VALUE_SIZE: usize = 20;
+pub const NODE_KEY_SIZE: usize = 4;
+pub const NODE_VALUE_SIZE: usize = 20;
 
 #[repr(u8)]
 #[derive(Debug)]
@@ -26,10 +26,26 @@ impl From<u8> for NodeType {
     }
 }
 
+impl fmt::Display for NodeType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 pub struct BtreeNode {
     node_type: NodeType,
     key: u32,
     value: String,
+}
+
+impl fmt::Display for BtreeNode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Row id: {}, value: {}, node: {}",
+            self.key, self.value, self.node_type
+        )
+    }
 }
 
 impl BtreeNode {
@@ -41,11 +57,7 @@ impl BtreeNode {
         }
     }
 
-    fn get_header_size() -> usize {
-        ROOT_NODE_SIZE + PARENT_KEY_SIZE
-    }
-
-    fn get_node_size() -> usize {
+    pub fn get_node_size() -> usize {
         NODE_KEY_SIZE + NODE_VALUE_SIZE
     }
 
@@ -61,15 +73,15 @@ impl BtreeNode {
     }
 
     pub fn get(keys: [u8; MAX_PAGE_SIZE]) -> Vec<BtreeNode> {
-        let nodes_bytes = keys.split_at(Self::get_header_size()).1;
+        let nodes_bytes = keys.split_at(Pager::get_header_size()).1;
 
         let mut nodes = Vec::<BtreeNode>::new();
         for kv in nodes_bytes.chunks(Self::get_node_size()) {
             let node = kv.split_at(NODE_KEY_SIZE);
+            println!("node val {:?}", node);
 
             // get key
             let key_bytes = node.0;
-            println!("key: {:?}", key_bytes);
             let mut buf_key = [0; NODE_KEY_SIZE];
             buf_key.copy_from_slice(&key_bytes[0..NODE_KEY_SIZE]);
             let key = u32::from_be_bytes(buf_key);
@@ -85,7 +97,6 @@ impl BtreeNode {
                 nodes.push(btree_node);
             }
         }
-        println!("found {} nodes", nodes.len());
 
         nodes
     }

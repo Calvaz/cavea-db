@@ -79,7 +79,10 @@ pub fn execute_statement(statement: StatementType, value: &[&str]) -> Result<(),
     match statement {
         StatementType::Select => {
             println!("selecting");
-            table.pager.read_btree(0)?;
+            let nodes = table.pager.read_btree(0)?;
+            for n in nodes {
+                println!("{}", n);
+            }
         }
         StatementType::Insert => {
             println!("inserting");
